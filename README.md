@@ -12,6 +12,7 @@ The agent layer now includes a lightweight router that dispatches messages to sp
 - Optional local vector index for documentation
 - Built-in multi-agent orchestrator routing messages to CRM or accounting agents
 - Centralized logging and global error handling for stable operation
+- Optional streaming responses via WebSocket when using the `X-Stream` header
 
 ## Folder Structure
 - `src/` – application modules
@@ -47,6 +48,10 @@ Send an audio file (e.g., MP3) to the `/voice` endpoint or stream audio frames
 to `/ws/voice`. The service uses OpenAI's Whisper API to transcribe the audio
 before passing it to the chatbot.
 
+The WebSocket endpoint optionally streams responses token by token. Set the
+`X-Stream: 1` header when opening the WebSocket connection to receive partial
+messages before the final JSON payload.
+
 ### Running Tests
 The project includes a small test suite. After installing requirements run:
 ```bash
@@ -78,6 +83,8 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 OPENROUTER_API_KEY=<your-key>
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 ```
+
+Set `LLM_STREAMING=true` to allow streaming responses from the language model.
 
 These variables are defined in `.env.example` and can be adjusted to use other
 providers.

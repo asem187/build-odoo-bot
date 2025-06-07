@@ -9,7 +9,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Support optional alternative API endpoints such as OpenRouter
 def get_llm() -> ChatOpenAI:
-    """Return a ChatOpenAI instance with optional custom base URL."""
+    """Return a ChatOpenAI instance with optional custom base URL and streaming."""
     base_url = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENROUTER_BASE_URL")
     api_key = (
         os.getenv("OPENROUTER_API_KEY")
@@ -17,7 +17,8 @@ def get_llm() -> ChatOpenAI:
         else os.getenv("OPENAI_API_KEY")
     )
     model = os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview")
-    return ChatOpenAI(base_url=base_url, api_key=api_key, model=model)
+    stream = os.getenv("LLM_STREAMING", "false").lower() == "true"
+    return ChatOpenAI(base_url=base_url, api_key=api_key, model=model, streaming=stream)
 from langchain.memory import ConversationBufferMemory
 from langchain_community.vectorstores import FAISS
 from langchain.chains import ConversationalRetrievalChain
@@ -173,6 +174,19 @@ class MultiAgent:
         if self.classify(message) == "accounting":
             return self.accounting_agent.run(message)
         return self.crm_agent.run(message)
+
+    def stream(self, message: str):
+        """Yield tokens from the selected agent."""
+        agent = (
+            self.accounting_agent
+            if self.classify(message) == "accounting"
+            else self.crm_agent
+        )
+        if hasattr(agent, "stream"):
+            for chunk in agent.stream(message):
+                yield chunk
+        else:
+            yield agent.run(message)
 
 
 def get_agent() -> MultiAgent:

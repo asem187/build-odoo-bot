@@ -112,6 +112,7 @@ async def voice_ws(ws: WebSocket):
     if API_TOKEN and token != API_TOKEN:
         await ws.close(code=4401)
         return
+    streaming = ws.headers.get("x-stream", "") == "1"
     await ws.accept()
     chunks = bytearray()
     try:
@@ -125,7 +126,28 @@ async def voice_ws(ws: WebSocket):
         return
     transcript = await asyncio.to_thread(openai.Audio.transcribe, "whisper-1", bytes(chunks))
     agent = get_cached_agent()
-    response = await asyncio.to_thread(agent.run, transcript["text"])
+    if streaming:
+        queue: asyncio.Queue[str] = asyncio.Queue()
+        loop = asyncio.get_running_loop()
+
+        def _worker(loop):
+            for chunk in agent.stream(transcript["text"]):
+                asyncio.run_coroutine_threadsafe(queue.put(str(chunk)), loop)
+            asyncio.run_coroutine_threadsafe(queue.put(None), loop)
+
+        import threading
+
+        threading.Thread(target=_worker, args=(loop,), daemon=True).start()
+        tokens = []
+        while True:
+            token = await queue.get()
+            if token is None:
+                break
+            tokens.append(token)
+            await ws.send_text(token)
+        response = "".join(tokens)
+    else:
+        response = await asyncio.to_thread(agent.run, transcript["text"])
     await ws.send_json({"transcript": transcript["text"], "response": response})
     await ws.close()
 
