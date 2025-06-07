@@ -1,0 +1,12 @@
+langchain
+langchain-community
+odoorpc
+fastapi
+uvicorn
+python-dotenv
+openai
+faiss-cpu
+python-multipart
+httpx
+langchain-openai
+gitpython
