@@ -42,6 +42,9 @@ The agent layer now includes a lightweight router that dispatches messages to sp
    ```bash
    HOST=0.0.0.0 PORT=8000 python start_bot.py
    ```
+6. To keep the documentation up to date automatically, set `INGEST_INTERVAL_HOURS`
+   in your `.env` file. When this value is greater than ``0`` the `start_bot.py`
+   script schedules periodic runs of the ingestion process in the background.
 
 ### Voice Chat
 Send an audio file (e.g., MP3) to the `/voice` endpoint or stream audio frames
